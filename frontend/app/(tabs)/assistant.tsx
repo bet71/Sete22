@@ -72,6 +72,7 @@ export default function Assistant() {
       append("Sem conexão. Tente novamente.");
     } finally {
       setBusy(false);
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
     }
   };
 
@@ -135,7 +136,7 @@ const useStyles = makeStyles((c) => ({
   h1: { fontSize: 24, fontWeight: "700", color: c.onSurface },
   sub: { fontSize: 13, color: c.muted },
   iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: c.brandTertiary, alignItems: "center", justifyContent: "center" },
-  list: { padding: 16, gap: 8, flexGrow: 1 },
+  list: { padding: 16, paddingBottom: 32, gap: 8, flexGrow: 1 },
   empty: { alignItems: "center", gap: 12, paddingTop: 32 },
   emptyIcon: { width: 72, height: 72, borderRadius: 36, backgroundColor: c.brandTertiary, alignItems: "center", justifyContent: "center" },
   emptyTitle: { fontSize: 18, fontWeight: "600", color: c.onSurface, marginBottom: 8 },

@@ -49,7 +49,7 @@ const light = {
   surfaceInverse: "#1A1C1A",
   onSurfaceInverse: "#FFFFFF",
   muted: "#6E7570",
-  whatsapp: "#25D366", // brand color
+  whatsapp: "#0E7A3E", // WhatsApp-style green, darkened for readable white text
   onWhatsapp: "#FFFFFF",
 
   // ---------------------------------------------------------------------------

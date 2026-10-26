@@ -273,6 +273,22 @@ async def login(body: LoginIn):
     return {"token": make_token(user["id"]), "user": to_user(user).model_dump()}
 
 
+class ChangePasswordIn(BaseModel):
+    current_password: str = Field(min_length=1, max_length=72)
+    new_password: str = Field(min_length=6, max_length=72)
+
+
+@api.post("/auth/change-password")
+async def change_password(body: ChangePasswordIn, user=Depends(current_user)):
+    if not verify_pw(body.current_password, user["password_hash"]):
+        raise HTTPException(400, "Senha atual incorreta")
+    if body.current_password == body.new_password:
+        raise HTTPException(400, "A nova senha deve ser diferente da atual")
+    await db.users.update_one({"id": user["id"]}, {"$set": {"password_hash": hash_pw(body.new_password),
+                                                           "password_changed_at": now_iso()}})
+    return {"ok": True}
+
+
 @api.get("/auth/me")
 async def me(user=Depends(current_user)):
     return to_user(user).model_dump()
@@ -448,7 +464,10 @@ async def ask_json(system: str, prompt: str) -> dict:
     m = re.search(r"\{.*\}", text, re.S)
     if not m:
         raise HTTPException(502, "Resposta inválida da IA")
-    return json.loads(m.group(0))
+    try:
+        return json.loads(m.group(0))
+    except json.JSONDecodeError:
+        raise HTTPException(502, "Resposta inválida da IA")
 
 
 @api.post("/ai/generate")
@@ -523,15 +542,20 @@ async def startup():
     await db.users.create_index("email", unique=True)
     await db.users.create_index("id", unique=True)
     await db.listings.create_index("id", unique=True)
-    email = os.environ["ADMIN_EMAIL"].lower()
-    pw = os.environ["ADMIN_PASSWORD"]
-    existing = await db.users.find_one({"email": email})
-    if not existing:
-        await db.users.insert_one({"id": str(uuid.uuid4()), "name": "Administrador", "email": email,
-                                   "password_hash": hash_pw(pw), "role": "admin", "city": "", "state": "",
-                                   "whatsapp": "", "created_at": now_iso()})
-    elif not verify_pw(pw, existing["password_hash"]) or existing.get("role") != "admin":
-        await db.users.update_one({"email": email}, {"$set": {"password_hash": hash_pw(pw), "role": "admin"}})
+    # Seed the first admin ONCE (only when no admin exists). Only a bcrypt hash is kept in the
+    # environment; after creation the account lives solely in the database and is never overwritten.
+    if not await db.users.find_one({"role": "admin"}, {"_id": 1}):
+        email = os.environ.get("ADMIN_EMAIL", "").strip().lower()
+        pw_hash = os.environ.get("ADMIN_PASSWORD_HASH", "")
+        if email and pw_hash.startswith("$2"):
+            try:
+                await db.users.insert_one({"id": str(uuid.uuid4()), "name": "Administrador", "email": email,
+                                           "password_hash": pw_hash, "role": "admin", "city": "", "state": "",
+                                           "whatsapp": "", "created_at": now_iso()})
+            except Exception as e:
+                logger.warning(f"Admin seed skipped: {e}")
+        else:
+            logger.warning("No admin in database and no valid ADMIN_PASSWORD_HASH configured")
     try:
         await run_in_threadpool(init_storage)
     except Exception as e:

@@ -1,0 +1,45 @@
+{
+  "summary": "Full backend + frontend (390x844) test of MercadoLocal. Backend: 28/28 pytest pass (auth, change-password incl. admin change+revert to admin123, upload/files, listings CRUD+filters+permissions, admin stats/users/listings/delete user, AI generate/price/chat SSE+history). Frontend: home feed, chips, search, listing detail (seller/price/city/delivery/WhatsApp -> wa.me opens), register, login (bad + good), Anunciar validation + full publish flow WITH real photo upload via web file chooser + AI generate title/description + AI price suggestion/apply, Conta (my listings, delete, Alterar senha: mismatch/wrong current/success, logout, re-login with new password), admin locked screen, admin login -> /admin stats, Anúncios/Usuários tabs, remove listing, remove user (cascades listings), admin logout, Assistente chat streaming + history persistence + new chat. All core flows work. Issues are minor: contrast on admin total-value card, price parsing with dot decimals, no confirmation on destructive deletes, WhatsApp button contrast, stale test_credentials text.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/listings?category=<invalid>", "issue": "Invalid category silently ignored and returns all listings (acceptable, but could 400/empty)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Sell price parsing", "issue": "parseFloat(f.price.replace(/\\./g,'').replace(',','.')) strips ALL dots, so a user typing '800.50' (dot decimal, common on web/numeric keypads) publishes R$ 80.050,00. Reference: /app/frontend/app/(tabs)/sell.tsx:115", "testID": "listing-price-input", "priority": "MEDIUM"},
+      {"component": "Destructive actions without confirmation", "issue": "Delete my listing, admin remove listing and admin remove user (cascades all listings) execute immediately on single tap, no confirm dialog. Reference: /app/frontend/app/(tabs)/account.tsx:88, /app/frontend/app/admin.tsx:45-60,127", "testID": "delete-my-listing-*, admin-remove-listing-*, admin-remove-user-*", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Admin panel", "issues": ["'Valor total anunciado' card: statBig uses colors.onSurface (#1A1C1A) on brandPrimary (#2A4B3C) => ~1.6:1 contrast, value nearly unreadable; statLabel muted #6E7570 on #2A4B3C ~2.3:1. Use onBrandPrimary for both. Reference: /app/frontend/app/admin.tsx:158-160"]},
+      {"screen": "Listing detail", "issues": ["WhatsApp button white text on #25D366-like green has low contrast (~2:1); consider darker green (#128C7E/#075E54) or dark text."]},
+      {"screen": "Assistente", "issues": ["After streaming completes, last line of the assistant reply sits partially behind the input bar (auto-scroll ends slightly short)."]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_mercadolocal.py", "/app/backend/tests/seed_ui_data.py", "/app/backend/tests/cleanup_test_data.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Fix admin total-value card contrast (statBig/statLabel inside statWide should use onBrandPrimary / a light variant) in admin.tsx",
+    "Fix price parsing in sell.tsx:115 to handle '800.50' (only strip dots used as thousand separators, e.g. if a comma exists or dot followed by exactly 3 digits)",
+    "Add confirmation dialog (Alert / custom modal on web) before deleting listings and users",
+    "Improve WhatsApp button text contrast",
+    "Update /app/memory/test_credentials.md first line: it still says admin seeded from ADMIN_PASSWORD; it is now ADMIN_PASSWORD_HASH seeded once"
+  ],
+  "critical_code_review_comments": [
+    "No hardcoded admin password in code; .env holds only ADMIN_PASSWORD_HASH (single-quoted, $ safe); seed only when no admin exists - matches user request.",
+    "change-password enforces new != current and min 6/max 72 (bcrypt limit) - good.",
+    "AI endpoints: ask_json regex+json.loads can raise JSONDecodeError -> 500 if model returns malformed JSON; wrap in try and return 502.",
+    "GET /api/files/{path} is public (by design for listing photos); deleted users' uploaded files are not marked is_deleted on admin user removal.",
+    "admin_stats loops over all listings in Python for total_value; use aggregation $sum for scale.",
+    "list_listings caps at 500 with no pagination."
+  ],
+  "updated_files": ["/app/backend/tests/test_mercadolocal.py (removed hardcoded URL default, fixed 2 test bugs, added TestChangePassword)", "/app/backend/tests/seed_ui_data.py (new)", "/app/backend/tests/cleanup_test_data.py (new)"],
+  "success_rate": {"backend": "100% (28/28)", "frontend": "100% core flows; 5 minor UI/UX issues"},
+  "seed_data_creation": "Created TEST users/listings via seed_ui_data.py and pytest; all test_* users (and their listings) removed with cleanup_test_data.py. Admin password verified back to admin123.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: EXPO_PUBLIC_BACKEND_URL=<url> pytest /app/backend/tests/test_mercadolocal.py -n 1 (pytest.ini adds xdist). Admin change-password test reverts to admin123 in finally. Photo upload on web works via page.expect_file_chooser on add-photo-button. Run cleanup_test_data.py after tests.",
+  "rca_of_issue": ""
+}

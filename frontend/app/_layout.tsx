@@ -9,6 +9,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 
 import { AuthProvider } from "@/src/auth";
 import { ErrorBoundary } from "@/src/components/error-boundary";
+import { ConfirmProvider } from "@/src/components/confirm";
 import { ToastProvider } from "@/src/components/toast";
 import { Button } from "@/src/components/ui";
 import { queryClient } from "@/src/query-client";
@@ -47,7 +48,8 @@ export default function RootLayout() {
     const open = (data: any) => {
       const url = data?.deeplink || data?.action_url;
       if (!url) return;
-      url.startsWith("http") ? Linking.openURL(url) : router.push(url);
+      if (url.startsWith("http")) Linking.openURL(url);
+      else router.push(url);
     };
     const tapSub = Notifications.addNotificationResponseReceivedListener((r) => open(r.notification.request.content.data));
     Notifications.getLastNotificationResponseAsync().then((r) => r && open(r.notification.request.content.data));
@@ -74,7 +76,9 @@ export default function RootLayout() {
           <KeyboardProvider>
             <AuthProvider>
               <ToastProvider>
+                <ConfirmProvider>
                 <Stack screenOptions={{ headerShown: false }} />
+                </ConfirmProvider>
                 <Modal transparent visible={nudge} animationType="fade" onRequestClose={() => closeNudge(false)}>
                   <View style={styles.backdrop}>
                     <View style={styles.sheet} testID="push-nudge-dialog">

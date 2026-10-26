@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { apiFetch, categoryLabel, CATEGORIES, fileUrl, formatPrice, Listing, User } from "@/src/api";
 import { useAuth } from "@/src/auth";
+import { useConfirm } from "@/src/components/confirm";
 import { useToast } from "@/src/components/toast";
 import { Button, EmptyState } from "@/src/components/ui";
 import { makeStyles, useTheme } from "@/src/theme";
@@ -21,6 +22,7 @@ export default function Admin() {
   const { user, logout } = useAuth();
   const toast = useToast();
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const [tab, setTab] = useState<"listings" | "users">("listings");
   const isAdmin = user?.role === "admin";
   const stats = useQuery({ queryKey: ["admin-stats"], queryFn: () => apiFetch<Stats>("/admin/stats"), enabled: isAdmin });
@@ -43,6 +45,7 @@ export default function Admin() {
   const refresh = () => { stats.refetch(); listings.refetch(); users.refetch(); qc.invalidateQueries({ queryKey: ["listings"] }); };
 
   const removeListing = async (id: string) => {
+    if (!(await confirm({ title: "Remover anúncio?", message: "O vendedor será avisado e o anúncio sairá do app." }))) return;
     try {
       await apiFetch(`/listings/${id}`, { method: "DELETE" });
       toast("Anúncio removido", "success");
@@ -50,6 +53,7 @@ export default function Admin() {
     } catch (e: any) { toast(e.message, "error"); }
   };
   const removeUser = async (id: string) => {
+    if (!(await confirm({ title: "Remover usuário?", message: "O usuário e TODOS os anúncios dele serão apagados." }))) return;
     try {
       await apiFetch(`/admin/users/${id}`, { method: "DELETE" });
       toast("Usuário e seus anúncios removidos", "success");
@@ -75,8 +79,8 @@ export default function Admin() {
           <Stat label="Anúncios" value={s ? String(s.listings) : "–"} icon="pricetags-outline" testID="admin-stat-listings" />
         </View>
         <View style={styles.statWide} testID="admin-stat-total-value">
-          <Text style={styles.statLabel}>Valor total anunciado</Text>
-          <Text style={styles.statBig}>{s ? formatPrice(s.total_value) : "–"}</Text>
+          <Text style={styles.wideLabel}>Valor total anunciado</Text>
+          <Text style={styles.wideBig}>{s ? formatPrice(s.total_value) : "–"}</Text>
           <View style={styles.catRow}>
             {CATEGORIES.map((c) => (
               <View key={c.key} style={styles.catStat}>
@@ -158,10 +162,12 @@ const useStyles = makeStyles((c) => ({
   statWide: { padding: 16, borderRadius: 20, backgroundColor: c.brandPrimary, gap: 4 },
   statBig: { fontSize: 24, fontWeight: "700", color: c.onSurface },
   statLabel: { fontSize: 13, color: c.muted },
+  wideLabel: { fontSize: 13, color: c.onBrandPrimary, opacity: 0.85 },
+  wideBig: { fontSize: 24, fontWeight: "700", color: c.onBrandPrimary },
+  catLbl: { fontSize: 11, color: c.onBrandPrimary, opacity: 0.85 },
   catRow: { flexDirection: "row", marginTop: 8 },
   catStat: { flex: 1, alignItems: "center" },
   catNum: { fontSize: 18, fontWeight: "700", color: c.onBrandPrimary },
-  catLbl: { fontSize: 11, color: c.brandSecondary },
   segment: { flexDirection: "row", backgroundColor: c.surfaceTertiary, borderRadius: 12, padding: 4, marginTop: 4 },
   segBtn: { flex: 1, height: 40, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   segActive: { backgroundColor: c.surfaceSecondary },

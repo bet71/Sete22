@@ -8,7 +8,7 @@ import uuid
 import pytest
 import requests
 
-BASE_URL = os.environ.get("EXPO_PUBLIC_BACKEND_URL", "https://mercado-local-18.preview.emergentagent.com").rstrip("/")
+BASE_URL = os.environ.get("EXPO_PUBLIC_BACKEND_URL").rstrip("/")
 API = f"{BASE_URL}/api"
 
 # Minimal 1x1 JPEG
@@ -64,7 +64,7 @@ class TestAuth:
     def test_register_duplicate(self, session, user_a):
         r = session.post(f"{API}/auth/register", json={
             "name": "dup", "email": user_a["email"], "password": "pass1234",
-            "city": "x", "state": "SP", "whatsapp": "12345678"
+            "city": "xx", "state": "SP", "whatsapp": "12345678"
         })
         assert r.status_code == 409
 
@@ -80,7 +80,7 @@ class TestAuth:
     def test_me(self, session, user_a):
         r = session.get(f"{API}/auth/me", headers={"Authorization": f"Bearer {user_a['token']}"})
         assert r.status_code == 200
-        assert r.json()["email"] == user_a["email"]
+        assert r.json()["email"] == user_a["email"].lower()
 
     def test_me_no_token(self, session):
         r = session.get(f"{API}/auth/me")
@@ -297,3 +297,52 @@ class TestAI:
         assert h.status_code == 200
         roles = [m["role"] for m in h.json()]
         assert "user" in roles and "assistant" in roles
+
+
+# -------- change password --------
+class TestChangePassword:
+    def _reg(self, session):
+        email = f"TEST_cp_{uuid.uuid4().hex[:8]}@example.com"
+        r = session.post(f"{API}/auth/register", json={
+            "name": "TEST CP", "email": email, "password": "oldpass1",
+            "city": "Rio", "state": "RJ", "whatsapp": "21999990000"})
+        assert r.status_code == 200
+        return email, r.json()["token"]
+
+    def test_wrong_current(self, session):
+        email, tok = self._reg(session)
+        r = session.post(f"{API}/auth/change-password", json={"current_password": "nope123", "new_password": "newpass1"},
+                         headers={"Authorization": f"Bearer {tok}"})
+        assert r.status_code == 400
+
+    def test_no_auth(self, session):
+        r = requests.post(f"{API}/auth/change-password", json={"current_password": "a", "new_password": "newpass1"})
+        assert r.status_code == 401
+
+    def test_short_new(self, session):
+        email, tok = self._reg(session)
+        r = session.post(f"{API}/auth/change-password", json={"current_password": "oldpass1", "new_password": "12"},
+                         headers={"Authorization": f"Bearer {tok}"})
+        assert r.status_code == 422
+
+    def test_change_ok_and_login(self, session):
+        email, tok = self._reg(session)
+        r = session.post(f"{API}/auth/change-password", json={"current_password": "oldpass1", "new_password": "newpass1"},
+                         headers={"Authorization": f"Bearer {tok}"})
+        assert r.status_code == 200 and r.json().get("ok") is True
+        assert session.post(f"{API}/auth/login", json={"email": email, "password": "oldpass1"}).status_code == 401
+        assert session.post(f"{API}/auth/login", json={"email": email, "password": "newpass1"}).status_code == 200
+
+    def test_admin_change_and_revert(self, session):
+        r = session.post(f"{API}/auth/login", json={"email": "admin@app.com", "password": "admin123"})
+        assert r.status_code == 200
+        tok = r.json()["token"]
+        h = {"Authorization": f"Bearer {tok}"}
+        try:
+            r = session.post(f"{API}/auth/change-password", json={"current_password": "admin123", "new_password": "TEST_admin456"}, headers=h)
+            assert r.status_code == 200
+            assert session.post(f"{API}/auth/login", json={"email": "admin@app.com", "password": "admin123"}).status_code == 401
+            assert session.post(f"{API}/auth/login", json={"email": "admin@app.com", "password": "TEST_admin456"}).status_code == 200
+        finally:
+            session.post(f"{API}/auth/change-password", json={"current_password": "TEST_admin456", "new_password": "admin123"}, headers=h)
+        assert session.post(f"{API}/auth/login", json={"email": "admin@app.com", "password": "admin123"}).status_code == 200

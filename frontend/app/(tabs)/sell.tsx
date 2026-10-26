@@ -112,7 +112,10 @@ export default function Sell() {
 
   const submit = async () => {
     const e: Record<string, string> = {};
-    const priceNum = parseFloat(f.price.replace(/\./g, "").replace(",", "."));
+    const raw = f.price.trim();
+    // "1.234,56" (BR) or "800.50" / "800,50" (single decimal separator)
+    const normalized = raw.includes(",") ? raw.replace(/\./g, "").replace(",", ".") : /^\d{1,3}(\.\d{3})+$/.test(raw) ? raw.replace(/\./g, "") : raw;
+    const priceNum = parseFloat(normalized);
     if (!photos.length) e.photos = "Adicione pelo menos 1 foto";
     if (f.title.trim().length < 3) e.title = "Título muito curto";
     if (f.description.trim().length < 5) e.description = "Descreva o produto";

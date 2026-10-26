@@ -32,7 +32,10 @@ export default function TabsLayout() {
     );
   }
 
-  const icon = (name: string) => ({ color, size }: { color: string; size: number }) => <Ionicons name={name as any} size={size} color={color} />;
+  const icon = (name: string) =>
+    function TabIcon({ color, size }: { color: string; size: number }) {
+      return <Ionicons name={name as any} size={size} color={color} />;
+    };
 
   return (
     <Tabs

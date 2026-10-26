@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { apiFetch, fileUrl, formatPrice, Listing } from "@/src/api";
 import { useAuth } from "@/src/auth";
+import { useConfirm } from "@/src/components/confirm";
 import { useToast } from "@/src/components/toast";
 import { Button, EmptyState } from "@/src/components/ui";
 import { usesNativeTabs } from "@/src/navigation";
@@ -20,6 +21,7 @@ export default function Account() {
   const { user, logout } = useAuth();
   const toast = useToast();
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const bottomChrome = usesNativeTabs ? insets.bottom : 0;
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["my-listings", user?.id],
@@ -40,6 +42,7 @@ export default function Account() {
     );
 
   const remove = async (id: string) => {
+    if (!(await confirm({ title: "Remover anúncio?", message: "Esta ação não pode ser desfeita." }))) return;
     try {
       await apiFetch(`/listings/${id}`, { method: "DELETE" });
       toast("Anúncio removido", "success");
@@ -92,6 +95,7 @@ export default function Account() {
         ))
       )}
 
+      <Button testID="change-password-button" title="Alterar senha" variant="secondary" icon="key-outline" onPress={() => router.push("/change-password")} />
       <Button testID="logout-button" title="Sair da conta" variant="secondary" icon="log-out-outline" onPress={async () => { await logout(); toast("Você saiu da conta"); }} />
     </ScrollView>
   );
