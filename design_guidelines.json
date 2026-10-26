@@ -1,0 +1,180 @@
+{
+  "app_name": "MercadoLocal",
+  "personality": "1 iOS-Native Clean",
+  "personality_one_liner": "A highly legible, content-first marketplace where product photos take center stage, supported by trustworthy moss green accents and crisp typography.",
+  "color": {
+    "surface": "#FAFAFA",
+    "onSurface": "#1A1C1A",
+    "surfaceSecondary": "#FFFFFF",
+    "onSurfaceSecondary": "#1A1C1A",
+    "surfaceTertiary": "#F2F4F2",
+    "onSurfaceTertiary": "#3B403D",
+    "surfaceInverse": "#1A1C1A",
+    "onSurfaceInverse": "#FFFFFF",
+    "brand": "#2A4B3C",
+    "brandPrimary": "#2A4B3C",
+    "onBrandPrimary": "#FFFFFF",
+    "brandSecondary": "#D3E1D9",
+    "onBrandSecondary": "#2A4B3C",
+    "brandTertiary": "#E8F0EC",
+    "onBrandTertiary": "#2A4B3C",
+    "success": "#2D6A4F",
+    "onSuccess": "#FFFFFF",
+    "warning": "#D48B29",
+    "onWarning": "#FFFFFF",
+    "error": "#B93A32",
+    "onError": "#FFFFFF",
+    "info": "#4A6650",
+    "onInfo": "#FFFFFF",
+    "border": "#E6EAE7",
+    "borderStrong": "#C8D1CC",
+    "divider": "#E6EAE7",
+    "muted": "#6E7570",
+    "onBrand": "#FFFFFF"
+  },
+  "typography": {
+    "displayFontFamily": "Plus Jakarta Sans",
+    "textFontFamily": "Plus Jakarta Sans",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Generous vertical breathing room. Cards never flush to screen edge; always use at least md padding. Forms use ample spacing between fields.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": "1",
+  "navigation": "bottom_tabs",
+  "icon_set": "Phosphor",
+  "glassmorphism": {
+    "enabled": true,
+    "do's": [
+      "Use on sticky headers over scrolling content",
+      "Use on the bottom tab bar",
+      "Apply subtle frosted glass on hero image overlays"
+    ],
+    "dont's": [
+      "Never apply to form inputs, regular buttons, or body content",
+      "Do not overdo on lists or dense data screens"
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Auth (Login & Register)",
+      "purpose": "Clean, trustworthy entry point to authenticate users.",
+      "states": {
+        "loading": "Centered spinner during auth.",
+        "empty": "N/A",
+        "error": "Inline text below inputs or standard alert for invalid credentials."
+      },
+      "layout": "Simple column layout centered vertically. Logo at top, followed by form inputs (Email, Password) with labels above inputs. Primary sticky CTA at bottom inside KeyboardAvoidingView. Link to toggle Login/Register."
+    },
+    {
+      "name": "Home (Listings Feed)",
+      "purpose": "Discover what's being sold nearby, with a clear view of item, price, and seller.",
+      "states": {
+        "loading": "Skeleton grid representing listings.",
+        "empty": "Illustration of an open box with text 'Nenhum anúncio encontrado' and a refresh CTA.",
+        "error": "Message 'Não foi possível carregar' with retry button."
+      },
+      "layout": "Sticky header with Search bar and horizontal scrollable Category chips (Carros, Telefones, Móveis, Acessórios). Below, a 2-column masonry or grid layout for listings. Each card shows: product photo, title, price (bold), and tiny seller name/avatar. Safe area padding applied."
+    },
+    {
+      "name": "Listing Detail",
+      "purpose": "Immersive view of the product, showing all seller details and a prominent WhatsApp contact button.",
+      "states": {
+        "loading": "Skeleton for image hero and text blocks.",
+        "empty": "N/A",
+        "error": "Message if listing was removed/not found."
+      },
+      "layout": "Full-width photo carousel at the top (with pagination dots). Below: Title, Condition (Novo/Usado), and Price. Then a section for Seller info (Avatar, Name, City/State). Then Description and Delivery status (Entrega: Sim/Não). Sticky primary CTA 'Chamar no WhatsApp' at the very bottom."
+    },
+    {
+      "name": "Create Listing",
+      "purpose": "Step-by-step or single long-form page to allow users to post an ad effortlessly.",
+      "states": {
+        "loading": "Spinner over 'Publicando...'",
+        "empty": "N/A",
+        "error": "Validation errors inline below fields."
+      },
+      "layout": "Horizontal scroll row at the top for up to 5 photos (first slot is 'Add photo' button). Followed by single-column form with clear labels above inputs: Title, Description, Price, Condition (segmented control), Category (dropdown/sheet), City/State, Delivery (switch), WhatsApp number. Sticky CTA 'Publicar Anúncio' at bottom."
+    },
+    {
+      "name": "My Listings",
+      "purpose": "Manage personal active and sold listings.",
+      "states": {
+        "loading": "Skeleton list.",
+        "empty": "Illustration of a storefront with text 'Você ainda não tem anúncios' and a 'Criar Anúncio' primary CTA.",
+        "error": "Error message with retry."
+      },
+      "layout": "Single column list view (not grid). Each row shows a small thumbnail, title, price, and stats (views). Includes 'Remover' or 'Editar' options."
+    },
+    {
+      "name": "Admin Panel",
+      "purpose": "Dedicated area for administrators to view app stats, manage users, and remove listings.",
+      "states": {
+        "loading": "Skeleton for stats.",
+        "empty": "Empty state if no users/listings to review.",
+        "error": "Error loading admin data."
+      },
+      "layout": "Dashboard feel but keeping mobile constraints. Top summary cards (Total Users, Active Listings). Below, two distinct sections or tabs: 'Usuários' and 'Anúncios'. Admin can tap a listing to view it and press a destructive 'Remover Anúncio' CTA. Admin requires a separate login flag."
+    }
+  ],
+  "images": {
+    "empty_feed": {
+      "url": "https://images.unsplash.com/photo-1656543802898-41c8c46683a7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDF8MHwxfHNlYXJjaHwxfHxtaW5pbWFsaXN0JTIwY2FyZGJvYXJkJTIwYm94JTIwcGFja2FnaW5nfGVufDB8fHx8MTc5MzA0MjkxOXww&ixlib=rb-4.1.0&q=85",
+      "alt": "Minimalist cardboard box packaging for empty feed state"
+    },
+    "placeholder_furniture": {
+      "url": "https://images.unsplash.com/photo-1550581190-9c1c48d21d6c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1Mjh8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBsaXZpbmclMjByb29tJTIwc29mYSUyMGNvenl8ZW58MHx8fHwxNzkzMDQyOTE5fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Modern living room sofa cozy for furniture listing placeholder"
+    },
+    "placeholder_car": {
+      "url": "https://images.unsplash.com/photo-1676218424650-437f3db75bf7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2ODh8MHwxfHNlYXJjaHwxfHxjbGFzc2ljJTIwY2FyJTIwdmludGFnZSUyMG91dGRvb3JzfGVufDB8fHx8MTc5MzA0MjkxOXww&ixlib=rb-4.1.0&q=85",
+      "alt": "Classic green vintage car outdoors for car listing placeholder"
+    },
+    "placeholder_camera": {
+      "url": "https://images.unsplash.com/photo-1516961642265-531546e84af2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzd8MHwxfHNlYXJjaHwxfHx2aW50YWdlJTIwZmlsbSUyMGNhbWVyYSUyMGFlc3RoZXRpY3xlbnwwfHx8fDE3OTMwNDI5MTl8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Vintage film camera aesthetic for accessory listing placeholder"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Design standard: Follow iOS-Native Clean (Personality 1). Use generous spacing, rounded corners (md:12, lg:20), and subtle shadow (tier 1).",
+    "Navigation: Implement a Bottom Tab bar with Home, Post, My Listings, and Admin (if user is admin). Ensure the tab bar uses glassmorphism if content scrolls behind it.",
+    "Data Structure: Since backend is not explicitly provided, mock the data structures (listings, users) using realistic local state/context so the flows (login, register, add listing, admin remove listing) can be demonstrated.",
+    "Form UX: For the 'Create Listing' screen, use KeyboardAvoidingView and keep the primary 'Publicar Anúncio' CTA sticky at the bottom. Use a horizontal ScrollView for the 5 photo slots.",
+    "Typography: Use Plus Jakarta Sans with strict weight constraints (max 500 font weight everywhere). Create hierarchy through size, not extreme weights.",
+    "No Banned Colors: Strictly avoid all shades of blue, purple, indigo. Rely on the provided Moss Green (#2A4B3C) for trust and primary branding.",
+    "Admin Panel: Build a basic Admin Dashboard that lists all users and active listings. Provide a 'Remove' button for the admin to moderate content. Add a mock login switch to enter as admin.",
+    "Portuguese (Brazil): All UI text, form labels, and placeholders must be in Portuguese.",
+    "Image Scrims: Any text overlaid on images (like photo pagination dots or badges over the listing photo) MUST use a top-to-bottom gradient scrim (transparent to surfaceInverse) to ensure text readability."
+  ]
+}
