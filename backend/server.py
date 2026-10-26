@@ -36,8 +36,21 @@ JWT_SECRET = os.environ['JWT_SECRET']
 EMERGENT_KEY = os.environ.get('EMERGENT_LLM_KEY')
 CLAUDE_MODEL = "claude-sonnet-5-5"
 APP_NAME = "mercadolocal"
-CATEGORIES = ["carros", "telefones", "moveis", "acessorios"]
-CATEGORY_LABELS = {"carros": "Carros", "telefones": "Telefones", "moveis": "Móveis", "acessorios": "Acessórios"}
+CATEGORY_LABELS = {
+    "carros": "Carros", "telefones": "Telefones", "moveis": "Móveis", "eletrodomesticos": "Eletrodomésticos",
+    "roupas": "Roupas", "acessorios": "Acessórios", "casas": "Casas à venda", "terrenos": "Terrenos",
+    "aluguel": "Aluguel / Locação", "outros": "Outros",
+}
+CATEGORIES = list(CATEGORY_LABELS)
+CategoryT = Literal["carros", "telefones", "moveis", "eletrodomesticos", "roupas", "acessorios", "casas",
+                    "terrenos", "aluguel", "outros"]
+SERVICE_LABELS = {
+    "eletricista": "Eletricista", "gesso": "Gesso / Drywall", "mecanico": "Mecânico", "encanador": "Encanador",
+    "pedreiro": "Pedreiro", "pintor": "Pintor", "diarista": "Diarista / Limpeza", "marceneiro": "Marceneiro",
+    "tecnico": "Técnico (eletrônicos/informática)", "outros": "Outros serviços",
+}
+ServiceT = Literal["eletricista", "gesso", "mecanico", "encanador", "pedreiro", "pintor", "diarista", "marceneiro",
+                   "tecnico", "outros"]
 
 app = FastAPI()
 
@@ -192,7 +205,7 @@ class ListingIn(BaseModel):
     description: str = Field(min_length=5, max_length=3000)
     price: float = Field(gt=0)
     condition: Literal["novo", "usado"]
-    category: Literal["carros", "telefones", "moveis", "acessorios"]
+    category: CategoryT
     city: str = Field(min_length=2, max_length=80)
     state: str = Field(min_length=2, max_length=40)
     delivers: bool
@@ -400,6 +413,8 @@ async def admin_stats(_=Depends(admin_user)):
         total_value += d.get("price", 0)
     return {"users": await db.users.count_documents({"role": "user"}),
             "listings": await db.listings.count_documents({}),
+            "partners_pending": await db.partners.count_documents({"status": "pending"}),
+            "partners_approved": await db.partners.count_documents({"status": "approved"}),
             "by_category": by_cat, "total_value": total_value}
 
 
@@ -426,6 +441,100 @@ async def admin_delete_user(uid: str, admin=Depends(admin_user)):
     if not res.deleted_count:
         raise HTTPException(404, "Usuário não encontrado")
     await db.listings.delete_many({"owner_id": uid})
+    await db.partners.delete_many({"owner_id": uid})
+    return {"ok": True}
+
+
+# ---------------- Partner businesses (services) ----------------
+class PartnerIn(BaseModel):
+    business_name: str = Field(min_length=2, max_length=80)
+    service: ServiceT
+    description: str = Field(min_length=10, max_length=1500)
+    city: str = Field(min_length=2, max_length=80)
+    state: str = Field(min_length=2, max_length=40)
+    whatsapp: str = Field(min_length=8, max_length=20)
+    photo: Optional[str] = None
+
+
+class Partner(PartnerIn):
+    id: str
+    owner_id: str
+    owner_name: str
+    status: Literal["pending", "approved", "rejected"]
+    created_at: str
+    updated_at: str
+
+
+class PartnerStatusIn(BaseModel):
+    status: Literal["approved", "rejected"]
+
+
+@api.get("/partners", response_model=List[Partner])
+async def list_partners(service: Optional[str] = None, q: Optional[str] = None):
+    query = {"status": "approved"}
+    if service in SERVICE_LABELS:
+        query["service"] = service
+    if q:
+        rx = {"$regex": re.escape(q), "$options": "i"}
+        query["$or"] = [{"business_name": rx}, {"description": rx}, {"city": rx}]
+    docs = await db.partners.find(query, {"_id": 0}).sort("updated_at", -1).to_list(500)
+    return [Partner(**d) for d in docs]
+
+
+@api.get("/my/partner")
+async def my_partner(user=Depends(current_user)):
+    d = await db.partners.find_one({"owner_id": user["id"]}, {"_id": 0})
+    return Partner(**d).model_dump() if d else None
+
+
+@api.post("/my/partner", response_model=Partner)
+async def upsert_my_partner(body: PartnerIn, user=Depends(current_user)):
+    if body.photo and not await db.files.find_one({"storage_path": body.photo, "owner_id": user["id"]}):
+        raise HTTPException(400, "Foto inválida")
+    existing = await db.partners.find_one({"owner_id": user["id"]}, {"_id": 0})
+    ts = now_iso()
+    p = Partner(**body.model_dump(), id=existing["id"] if existing else str(uuid.uuid4()), owner_id=user["id"],
+                owner_name=user["name"], status="pending", created_at=existing["created_at"] if existing else ts,
+                updated_at=ts)
+    await db.partners.replace_one({"owner_id": user["id"]}, p.model_dump(), upsert=True)
+    return p
+
+
+@api.delete("/my/partner")
+async def delete_my_partner(user=Depends(current_user)):
+    await db.partners.delete_one({"owner_id": user["id"]})
+    return {"ok": True}
+
+
+@api.get("/admin/partners", response_model=List[Partner])
+async def admin_partners(_=Depends(admin_user)):
+    docs = await db.partners.find({}, {"_id": 0}).sort("updated_at", -1).to_list(1000)
+    order = {"pending": 0, "approved": 1, "rejected": 2}
+    return sorted([Partner(**d) for d in docs], key=lambda p: order[p.status])
+
+
+@api.post("/admin/partners/{pid}/status", response_model=Partner)
+async def admin_partner_status(pid: str, body: PartnerStatusIn, _=Depends(admin_user)):
+    d = await db.partners.find_one_and_update({"id": pid}, {"$set": {"status": body.status}},
+                                              projection={"_id": 0}, return_document=True)
+    if not d:
+        raise HTTPException(404, "Parceiro não encontrado")
+    approved = body.status == "approved"
+    msg = (f"Seu serviço \"{d['business_name']}\" foi aprovado e já aparece em Serviços." if approved
+           else f"Seu cadastro \"{d['business_name']}\" não foi aprovado. Revise as informações e envie novamente.")
+    asyncio.create_task(safe_push([d["owner_id"]], {"title": "Cadastro aprovado!" if approved else "Cadastro não aprovado",
+                                                    "message": msg, "action_url": "/(tabs)/services"}))
+    owner = await db.users.find_one({"id": d["owner_id"]}, {"_id": 0, "email": 1})
+    if owner:
+        asyncio.create_task(send_email(owner["email"], "Atualização do seu cadastro de parceiro", f"<p>{msg}</p>"))
+    return Partner(**d)
+
+
+@api.delete("/admin/partners/{pid}")
+async def admin_delete_partner(pid: str, _=Depends(admin_user)):
+    res = await db.partners.delete_one({"id": pid})
+    if not res.deleted_count:
+        raise HTTPException(404, "Parceiro não encontrado")
     return {"ok": True}
 
 

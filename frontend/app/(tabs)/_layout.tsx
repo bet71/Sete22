@@ -16,13 +16,13 @@ export default function TabsLayout() {
           <NativeTabs.Trigger.Icon sf="house.fill" />
           <NativeTabs.Trigger.Label>Início</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="services">
+          <NativeTabs.Trigger.Icon sf="wrench.and.screwdriver.fill" />
+          <NativeTabs.Trigger.Label>Serviços</NativeTabs.Trigger.Label>
+        </NativeTabs.Trigger>
         <NativeTabs.Trigger name="sell">
           <NativeTabs.Trigger.Icon sf="plus.circle.fill" />
           <NativeTabs.Trigger.Label>Anunciar</NativeTabs.Trigger.Label>
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="assistant">
-          <NativeTabs.Trigger.Icon sf="sparkles" />
-          <NativeTabs.Trigger.Label>Assistente</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="account">
           <NativeTabs.Trigger.Icon sf="person.crop.circle.fill" />
@@ -49,8 +49,8 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: "Início", tabBarIcon: icon("home"), tabBarButtonTestID: "tab-home" } as any} />
+      <Tabs.Screen name="services" options={{ title: "Serviços", tabBarIcon: icon("construct"), tabBarButtonTestID: "tab-services" } as any} />
       <Tabs.Screen name="sell" options={{ title: "Anunciar", tabBarIcon: icon("add-circle"), tabBarButtonTestID: "tab-sell" } as any} />
-      <Tabs.Screen name="assistant" options={{ title: "Assistente", tabBarIcon: icon("sparkles"), tabBarButtonTestID: "tab-assistant" } as any} />
       <Tabs.Screen name="account" options={{ title: "Conta", tabBarIcon: icon("person-circle"), tabBarButtonTestID: "tab-account" } as any} />
     </Tabs>
   );

@@ -1,5 +1,6 @@
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { useQuery } from "@tanstack/react-query";
+import { router } from "expo-router";
 import React, { useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -29,7 +30,13 @@ export default function Home() {
   return (
     <View style={styles.root}>
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <Text style={styles.brand}>MercadoLocal</Text>
+        <View style={styles.brandRow}>
+          <Text style={styles.brand}>MercadoLocal</Text>
+          <Pressable testID="open-assistant-button" onPress={() => router.push("/assistant")} style={styles.aiBtn}>
+            <Ionicons name="sparkles" size={16} color={colors.onBrandTertiary} />
+            <Text style={styles.aiText}>Assistente IA</Text>
+          </Pressable>
+        </View>
         <View style={styles.search}>
           <Ionicons name="search" size={18} color={colors.muted} />
           <TextInput testID="search-input" value={q} onChangeText={setQ} placeholder="Buscar produtos ou cidade" placeholderTextColor={colors.muted} style={styles.searchInput} returnKeyType="search" />
@@ -73,6 +80,9 @@ const useStyles = makeStyles((c) => ({
   root: { flex: 1, backgroundColor: c.surface },
   header: { backgroundColor: c.surfaceSecondary, borderBottomWidth: 1, borderBottomColor: c.border, paddingHorizontal: 16, gap: 12 },
   brand: { fontSize: 24, fontWeight: "700", color: c.brandPrimary, letterSpacing: -0.5 },
+  brandRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  aiBtn: { flexDirection: "row", alignItems: "center", gap: 6, height: 36, paddingHorizontal: 12, borderRadius: 999, backgroundColor: c.brandTertiary },
+  aiText: { fontSize: 13, fontWeight: "600", color: c.onBrandTertiary },
   search: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: c.surfaceTertiary, borderRadius: 12, paddingHorizontal: 12, height: 44 },
   searchInput: { flex: 1, fontSize: 15, color: c.onSurface, height: 44 },
   chipsRow: { height: 56, flexGrow: 0, marginHorizontal: -16 },

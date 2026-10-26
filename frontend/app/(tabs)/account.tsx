@@ -6,7 +6,7 @@ import React from "react";
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { apiFetch, fileUrl, formatPrice, Listing } from "@/src/api";
+import { apiFetch, fileUrl, formatPrice, Listing, Partner } from "@/src/api";
 import { useAuth } from "@/src/auth";
 import { useConfirm } from "@/src/components/confirm";
 import { useToast } from "@/src/components/toast";
@@ -28,6 +28,7 @@ export default function Account() {
     queryFn: () => apiFetch<Listing[]>("/my/listings"),
     enabled: !!user,
   });
+  const partner = useQuery({ queryKey: ["my-partner", user?.id], queryFn: () => apiFetch<Partner | null>("/my/partner"), enabled: !!user });
 
   if (!user)
     return (
@@ -72,6 +73,19 @@ export default function Account() {
         <Button testID="open-admin-panel-button" icon="shield-checkmark-outline" title="Painel do administrador" onPress={() => router.push("/admin")} />
       )}
 
+      <Pressable testID="my-partner-card" onPress={() => router.push("/partner-form")} style={styles.row}>
+        <View style={styles.partnerIcon}><Ionicons name="construct-outline" size={22} color={colors.brandPrimary} /></View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.rowTitle}>{partner.data ? partner.data.business_name : "Presta serviços?"}</Text>
+          <Text style={styles.meta} testID="my-partner-status">
+            {partner.data
+              ? partner.data.status === "approved" ? "Aprovado · aparece em Serviços" : partner.data.status === "rejected" ? "Não aprovado · toque para revisar" : "Aguardando aprovação"
+              : "Cadastre sua empresa como parceira"}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={colors.muted} />
+      </Pressable>
+
       <Text style={styles.section}>Meus anúncios</Text>
       {isLoading ? (
         <ActivityIndicator color={colors.brandPrimary} />
@@ -115,4 +129,5 @@ const useStyles = makeStyles((c) => ({
   rowTitle: { fontSize: 15, fontWeight: "500", color: c.onSurface },
   rowPrice: { fontSize: 15, fontWeight: "700", color: c.brandPrimary },
   del: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  partnerIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: c.brandTertiary, alignItems: "center", justifyContent: "center" },
 }));

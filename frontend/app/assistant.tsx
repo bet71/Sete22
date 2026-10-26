@@ -1,12 +1,12 @@
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { fetch as expoFetch } from "expo/fetch";
+import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import { FlatList, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { API, apiFetch } from "@/src/api";
-import { usesNativeTabs } from "@/src/navigation";
 import { makeStyles, useTheme } from "@/src/theme";
 import { storage } from "@/src/utils/storage";
 
@@ -22,7 +22,7 @@ export default function Assistant() {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const listRef = useRef<FlatList>(null);
-  const bottomChrome = usesNativeTabs ? insets.bottom : 0;
+  const bottomChrome = insets.bottom;
 
   useEffect(() => {
     (async () => {
@@ -86,6 +86,9 @@ export default function Assistant() {
   return (
     <View style={styles.root}>
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <Pressable testID="chat-back-button" onPress={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))} style={styles.backBtn} hitSlop={8}>
+          <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
+        </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.h1}>Assistente IA</Text>
           <Text style={styles.sub}>Tire dúvidas sobre comprar e vender</Text>
@@ -136,6 +139,7 @@ const useStyles = makeStyles((c) => ({
   h1: { fontSize: 24, fontWeight: "700", color: c.onSurface },
   sub: { fontSize: 13, color: c.muted },
   iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: c.brandTertiary, alignItems: "center", justifyContent: "center" },
+  backBtn: { width: 40, height: 44, justifyContent: "center" },
   list: { padding: 16, paddingBottom: 32, gap: 8, flexGrow: 1 },
   empty: { alignItems: "center", gap: 12, paddingTop: 32 },
   emptyIcon: { width: 72, height: 72, borderRadius: 36, backgroundColor: c.brandTertiary, alignItems: "center", justifyContent: "center" },

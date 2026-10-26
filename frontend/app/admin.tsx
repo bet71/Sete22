@@ -6,14 +6,16 @@ import React, { useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { apiFetch, categoryLabel, CATEGORIES, fileUrl, formatPrice, Listing, User } from "@/src/api";
+import { apiFetch, categoryLabel, CATEGORIES, fileUrl, formatPrice, Listing, Partner, serviceLabel, User } from "@/src/api";
 import { useAuth } from "@/src/auth";
 import { useConfirm } from "@/src/components/confirm";
 import { useToast } from "@/src/components/toast";
 import { Button, EmptyState } from "@/src/components/ui";
 import { makeStyles, useTheme } from "@/src/theme";
 
-type Stats = { users: number; listings: number; by_category: Record<string, number>; total_value: number };
+type Stats = { users: number; listings: number; partners_pending: number; partners_approved: number; by_category: Record<string, number>; total_value: number };
+type Tab = "partners" | "listings" | "users";
+const TAB_LABEL: Record<Tab, string> = { partners: "Parceiros", listings: "Anúncios", users: "Usuários" };
 
 export default function Admin() {
   const insets = useSafeAreaInsets();
@@ -23,9 +25,10 @@ export default function Admin() {
   const toast = useToast();
   const qc = useQueryClient();
   const confirm = useConfirm();
-  const [tab, setTab] = useState<"listings" | "users">("listings");
+  const [tab, setTab] = useState<Tab>("partners");
   const isAdmin = user?.role === "admin";
   const stats = useQuery({ queryKey: ["admin-stats"], queryFn: () => apiFetch<Stats>("/admin/stats"), enabled: isAdmin });
+  const partners = useQuery({ queryKey: ["admin-partners"], queryFn: () => apiFetch<Partner[]>("/admin/partners"), enabled: isAdmin });
   const listings = useQuery({ queryKey: ["admin-listings"], queryFn: () => apiFetch<Listing[]>("/admin/listings"), enabled: isAdmin });
   const users = useQuery({ queryKey: ["admin-users"], queryFn: () => apiFetch<User[]>("/admin/users"), enabled: isAdmin });
   const goBack = () => (router.canGoBack() ? router.back() : router.replace("/(tabs)"));
@@ -42,7 +45,23 @@ export default function Admin() {
       </View>
     );
 
-  const refresh = () => { stats.refetch(); listings.refetch(); users.refetch(); qc.invalidateQueries({ queryKey: ["listings"] }); };
+  const refresh = () => { stats.refetch(); listings.refetch(); users.refetch(); partners.refetch(); qc.invalidateQueries({ queryKey: ["listings"] }); qc.invalidateQueries({ queryKey: ["partners"] }); };
+
+  const setPartnerStatus = async (id: string, status: "approved" | "rejected") => {
+    try {
+      await apiFetch(`/admin/partners/${id}/status`, { method: "POST", body: JSON.stringify({ status }) });
+      toast(status === "approved" ? "Parceiro aprovado" : "Parceiro recusado", "success");
+      refresh();
+    } catch (e: any) { toast(e.message, "error"); }
+  };
+  const removePartner = async (id: string) => {
+    if (!(await confirm({ title: "Excluir parceiro?", message: "O cadastro será apagado definitivamente." }))) return;
+    try {
+      await apiFetch(`/admin/partners/${id}`, { method: "DELETE" });
+      toast("Parceiro excluído", "success");
+      refresh();
+    } catch (e: any) { toast(e.message, "error"); }
+  };
 
   const removeListing = async (id: string) => {
     if (!(await confirm({ title: "Remover anúncio?", message: "O vendedor será avisado e o anúncio sairá do app." }))) return;
@@ -78,6 +97,10 @@ export default function Admin() {
           <Stat label="Usuários" value={s ? String(s.users) : "–"} icon="people-outline" testID="admin-stat-users" />
           <Stat label="Anúncios" value={s ? String(s.listings) : "–"} icon="pricetags-outline" testID="admin-stat-listings" />
         </View>
+        <View style={styles.statsRow}>
+          <Stat label="Parceiros pendentes" value={s ? String(s.partners_pending) : "–"} icon="time-outline" testID="admin-stat-partners-pending" />
+          <Stat label="Parceiros aprovados" value={s ? String(s.partners_approved) : "–"} icon="shield-checkmark-outline" testID="admin-stat-partners-approved" />
+        </View>
         <View style={styles.statWide} testID="admin-stat-total-value">
           <Text style={styles.wideLabel}>Valor total anunciado</Text>
           <Text style={styles.wideBig}>{s ? formatPrice(s.total_value) : "–"}</Text>
@@ -92,14 +115,46 @@ export default function Admin() {
         </View>
 
         <View style={styles.segment}>
-          {(["listings", "users"] as const).map((t) => (
+          {(["partners", "listings", "users"] as const).map((t) => (
             <Pressable key={t} testID={`admin-tab-${t}`} onPress={() => setTab(t)} style={[styles.segBtn, tab === t && styles.segActive]}>
-              <Text style={[styles.segText, tab === t && styles.segTextActive]}>{t === "listings" ? "Anúncios" : "Usuários"}</Text>
+              <Text style={[styles.segText, tab === t && styles.segTextActive]}>{TAB_LABEL[t]}{t === "partners" && s?.partners_pending ? ` (${s.partners_pending})` : ""}</Text>
             </Pressable>
           ))}
         </View>
 
-        {tab === "listings" ? (
+        {tab === "partners" ? (
+          partners.isLoading ? <ActivityIndicator color={colors.brandPrimary} /> : !partners.data?.length ? (
+            <EmptyState icon="construct-outline" title="Nenhum cadastro de parceiro" />
+          ) : partners.data.map((p) => (
+            <View key={p.id} style={styles.card} testID={`admin-partner-${p.id}`}>
+              <View style={styles.cardTop}>
+                {p.photo ? <Image source={{ uri: fileUrl(p.photo) }} style={styles.thumb} contentFit="cover" /> : (
+                  <View style={[styles.thumb, styles.thumbFallback]}><Ionicons name="construct-outline" size={26} color={colors.brandPrimary} /></View>
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.title} numberOfLines={1}>{p.business_name}</Text>
+                  <Text style={styles.meta}>{serviceLabel(p.service)} · {p.city}/{p.state}</Text>
+                  <Text style={styles.meta}>Responsável: <Text style={styles.strong}>{p.owner_name}</Text> · {p.whatsapp}</Text>
+                  <View style={[styles.badge, p.status === "approved" ? styles.bApproved : p.status === "rejected" ? styles.bRejected : styles.bPending]}>
+                    <Text style={styles.badgeText} testID={`admin-partner-status-${p.id}`}>{p.status === "approved" ? "Aprovado" : p.status === "rejected" ? "Recusado" : "Pendente"}</Text>
+                  </View>
+                </View>
+              </View>
+              <Text style={styles.desc} numberOfLines={4}>{p.description}</Text>
+              <View style={styles.actions}>
+                {p.status !== "approved" && (
+                  <View style={{ flex: 1 }}><Button testID={`admin-approve-partner-${p.id}`} title="Aprovar" icon="checkmark" onPress={() => setPartnerStatus(p.id, "approved")} /></View>
+                )}
+                {p.status !== "rejected" && (
+                  <View style={{ flex: 1 }}><Button testID={`admin-reject-partner-${p.id}`} title="Recusar" variant="secondary" icon="close" onPress={() => setPartnerStatus(p.id, "rejected")} /></View>
+                )}
+                <Pressable testID={`admin-delete-partner-${p.id}`} onPress={() => removePartner(p.id)} style={styles.iconBtn} hitSlop={8}>
+                  <Ionicons name="trash-outline" size={20} color={colors.error} />
+                </Pressable>
+              </View>
+            </View>
+          ))
+        ) : tab === "listings" ? (
           listings.isLoading ? <ActivityIndicator color={colors.brandPrimary} /> : !listings.data?.length ? (
             <EmptyState icon="pricetags-outline" title="Nenhum anúncio" />
           ) : listings.data.map((l) => (
@@ -164,10 +219,18 @@ const useStyles = makeStyles((c) => ({
   statLabel: { fontSize: 13, color: c.muted },
   wideLabel: { fontSize: 13, color: c.onBrandPrimary, opacity: 0.85 },
   wideBig: { fontSize: 24, fontWeight: "700", color: c.onBrandPrimary },
-  catLbl: { fontSize: 11, color: c.onBrandPrimary, opacity: 0.85 },
-  catRow: { flexDirection: "row", marginTop: 8 },
-  catStat: { flex: 1, alignItems: "center" },
+  catLbl: { fontSize: 10, color: c.onBrandPrimary, opacity: 0.85, textAlign: "center" },
+  catRow: { flexDirection: "row", flexWrap: "wrap", marginTop: 8, rowGap: 12 },
+  catStat: { width: "20%", alignItems: "center" },
   catNum: { fontSize: 18, fontWeight: "700", color: c.onBrandPrimary },
+  thumbFallback: { backgroundColor: c.brandTertiary, alignItems: "center", justifyContent: "center" },
+  badge: { alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, marginTop: 4 },
+  bPending: { backgroundColor: c.warning },
+  bApproved: { backgroundColor: c.success },
+  bRejected: { backgroundColor: c.error },
+  badgeText: { fontSize: 11, fontWeight: "700", color: c.onSuccess },
+  desc: { fontSize: 13, lineHeight: 19, color: c.onSurfaceTertiary },
+  actions: { flexDirection: "row", gap: 8, alignItems: "center" },
   segment: { flexDirection: "row", backgroundColor: c.surfaceTertiary, borderRadius: 12, padding: 4, marginTop: 4 },
   segBtn: { flex: 1, height: 40, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   segActive: { backgroundColor: c.surfaceSecondary },
