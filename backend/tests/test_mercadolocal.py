@@ -208,7 +208,7 @@ class TestAdmin:
         assert r.status_code == 200
         d = r.json()
         assert "users" in d and "listings" in d and "by_category" in d and "total_value" in d
-        assert set(d["by_category"].keys()) == {"carros", "telefones", "moveis", "acessorios"}
+        assert set(d["by_category"].keys()) == {"carros", "telefones", "moveis", "eletrodomesticos", "roupas", "acessorios", "casas", "terrenos", "aluguel", "outros"}
 
     def test_users(self, session, admin_token):
         r = session.get(f"{API}/admin/users", headers={"Authorization": f"Bearer {admin_token}"})

@@ -1,0 +1,43 @@
+{
+  "summary": "Iteration 2: tested the 10 new listing categories, the partner (Empresas parceiras) flow from start to finish, the assistant stack screen, and a regression pass. Backend: 52/52 pytest pass (new test_partners_categories.py + updated test_mercadolocal.py). Frontend (375x667 web preview), all checks pass: home chips (10 categories + Todos, scrolling sideways, Aluguel filter); Assistente IA button opens /assistant with a back button, and streaming chat works; the 4 tabs Início/Serviços/Anunciar/Conta; Serviços list, 11 service chips, filter, search and WhatsApp button (opens api.whatsapp.com with prefilled text); Cadastrar while logged out goes to /login; Cadastrar while logged in opens /partner-form, which is prefilled from the profile, shows validation errors and submits; Conta then shows 'Aguardando aprovação'; admin Parceiros tab shows the pending partner and the stats; Aprovar makes the partner appear in Serviços; Recusar works; Delete opens a confirm modal, and both Cancel and Remover work; Anunciar shows the 10 categories; register, listing-detail WhatsApp and the admin Anúncios/Usuários tabs still work. No deprecated Expo packages found.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/my/partner", "issue": "whatsapp is checked only as min_length=8 chars (letters allowed). The frontend requires at least 10 digits. The backend should strip non-digits and require 10-13 digits, as the frontend does."},
+      {"endpoint": "POST /api/my/partner", "issue": "Upsert resets an approved partner to pending even when nothing changed, so the partner disappears from Serviços until the admin approves again. This may be intended; consider showing a warning in the form."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "assistant.tsx send()", "issue": "send() returns silently when `session` is not yet loaded from async storage (line 43: `if (!t || busy || !session) return`). On the first test run, sending right after the screen opened did nothing and showed no feedback. It worked after a ~2s wait. Disable the send button until the session is ready, or create the session id synchronously and persist it afterwards.", "testID": "chat-send-button", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "Serviços > Cadastrar (logged out) > login", "issue": "After login the user lands on home '/' instead of returning to /partner-form. Pass a redirect param to login, or use router.replace('/partner-form') after login.", "affected_testIDs": ["join-partner-button", "login-submit-button"]}
+    ],
+    "design_issues": [
+      {"screen": "Admin stats card", "issues": ["The 5-column category grid uses very small labels (~11px). 'Eletrodomésticos' and 'Casas à venda' wrap or squeeze at 375px width. Consider 2-3 columns or a horizontal scroll."]},
+      {"screen": "Serviços search (web)", "issues": ["A black browser focus outline shows inside the rounded search box on web. Add outlineStyle:'none' (web only) to the TextInput style."]},
+      {"screen": "Assistente IA", "issues": ["Markdown list syntax ('- item') is shown as raw text in assistant bubbles (cosmetic)."]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_partners_categories.py", "/app/backend/tests/test_mercadolocal.py", "/app/test_reports/pytest/pytest_iter2.xml"],
+  "action_items": [
+    "Assistant: block or disable send until the session is ready (assistant.tsx:43)",
+    "Return the user to /partner-form after logging in from Serviços > Cadastrar",
+    "Backend: check partner whatsapp digits (10-13 digits), matching the frontend",
+    "Optional: admin stats category grid readability; web outline on the search input"
+  ],
+  "critical_code_review_comments": [
+    "services.tsx: the partners query refetches on every keystroke (queryKey includes q). Add a debounce of ~300ms.",
+    "server.py is 676 lines, close to the 700-line limit. Consider splitting the partners/admin/AI routers into modules.",
+    "admin_partner_status: find_one_and_update with return_document=True works (pymongo treats True as AFTER). Using ReturnDocument.AFTER would be clearer."
+  ],
+  "updated_files": ["/app/backend/tests/test_mercadolocal.py (test_stats updated to 10 categories)", "/app/backend/tests/test_partners_categories.py (new)"],
+  "success_rate": {"backend": "100% (52/52)", "frontend": "100% core flows; 1 low-priority race + 1 redirect UX issue"},
+  "seed_data_creation": "Created TEST_ users, listings and partners during the tests. All were removed via tests/cleanup_test_data.py and the fixture teardown. Remaining partners are not test data: 'Carlos Eduardo da Silva lima' (approved) and 'Zé Auto Center' (rejected). The listings collection is now empty (0 listings). The admin password was not changed (admin123).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: export EXPO_PUBLIC_BACKEND_URL from frontend/.env; pytest tests/test_partners_categories.py tests/test_mercadolocal.py; then python tests/cleanup_test_data.py. Admin delete/reject actions use the confirm-dialog-confirm/cancel testIDs. On /assistant, wait ~2s before sending (session race). Tabs have no testIDs; use get_by_text('Serviços').",
+  "rca_of_issue": "Chat send no-op: the session id is loaded asynchronously in useEffect (storage.getItem), and send() returns early while session is still ''. Reproduce: open /assistant and send immediately. Fix: disable the send button while !session, or compute the sid synchronously."
+}
