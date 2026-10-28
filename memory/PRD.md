@@ -21,3 +21,9 @@ Later requests: Emergent push notifications, Claude AI, SendGrid, admin credenti
 - P1: Provide google-services.json for Android push; add SendGrid keys
 - P1: Edit listing, mark as sold
 - P2: Favorites, seller public profile, listing views count, image compression
+
+## Update (2026-06) — categories + partners
+- 10 categories: carros, telefones, moveis, eletrodomesticos, roupas, acessorios, casas, terrenos, aluguel, outros
+- Empresas parceiras: users submit service profile -> admin approves/rejects (Parceiros tab) -> public Serviços tab with WhatsApp
+- Tabs: Início, Serviços, Anunciar, Conta; Assistente IA opened from home header
+- Pending minor: disable chat send until session ready, return to partner form after login, stricter WhatsApp validation on backend, debounce search
