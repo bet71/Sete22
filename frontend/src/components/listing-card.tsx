@@ -45,9 +45,9 @@ const useStyles = makeStyles((c) => ({
   badgeNew: { backgroundColor: c.brandPrimary },
   badgeText: { fontSize: 11, fontWeight: "600", color: c.onSurface },
   badgeNewText: { color: c.onBrandPrimary },
-  body: { padding: 12, gap: 4 },
-  price: { fontSize: 16, fontWeight: "700", color: c.brandPrimary },
-  title: { fontSize: 14, color: c.onSurface, minHeight: 36 },
+  body: { padding: 12, gap: 5 },
+  price: { fontSize: 16, fontWeight: "600", color: c.brandPrimary },
+  title: { fontSize: 14, fontWeight: "500", color: c.onSurface, minHeight: 36 },
   row: { flexDirection: "row", alignItems: "center", gap: 4 },
-  meta: { fontSize: 12, color: c.muted, flex: 1 },
+  meta: { fontSize: 11, color: c.muted, flex: 1 },
 }));

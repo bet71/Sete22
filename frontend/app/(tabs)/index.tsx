@@ -69,6 +69,12 @@ export default function Home() {
           contentContainerStyle={[styles.list, { paddingBottom: bottomChrome + 24 }]}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brandPrimary} />}
           renderItem={({ item }) => <View style={{ flex: 1 / 2 }}><ListingCard item={item} /></View>}
+          ListHeaderComponent={
+            <View style={styles.sectionHeading}>
+              <Text style={styles.sectionTitle}>Explore anúncios</Text>
+              <Text style={styles.resultCount}>{data?.length ?? 0} resultados</Text>
+            </View>
+          }
           ListEmptyComponent={<EmptyState icon="cube-outline" title="Nenhum anúncio encontrado" subtitle="Seja o primeiro a anunciar nesta categoria!" />}
         />
       )}
@@ -79,17 +85,20 @@ export default function Home() {
 const useStyles = makeStyles((c) => ({
   root: { flex: 1, backgroundColor: c.surface },
   header: { backgroundColor: c.surfaceSecondary, borderBottomWidth: 1, borderBottomColor: c.border, paddingHorizontal: 16, gap: 12 },
-  brand: { fontSize: 24, fontWeight: "700", color: c.brandPrimary, letterSpacing: -0.5 },
+  brand: { fontSize: 22, fontWeight: "600", color: c.brandPrimary },
   brandRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   aiBtn: { flexDirection: "row", alignItems: "center", gap: 6, height: 36, paddingHorizontal: 12, borderRadius: 999, backgroundColor: c.brandTertiary },
   aiText: { fontSize: 13, fontWeight: "600", color: c.onBrandTertiary },
-  search: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: c.surfaceTertiary, borderRadius: 12, paddingHorizontal: 12, height: 44 },
-  searchInput: { flex: 1, fontSize: 15, color: c.onSurface, height: 44 },
+  search: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: c.surfaceTertiary, borderRadius: 12, paddingHorizontal: 14, height: 48 },
+  searchInput: { flex: 1, fontSize: 15, color: c.onSurface, height: 48 },
   chipsRow: { height: 56, flexGrow: 0, marginHorizontal: -16 },
   chips: { gap: 8, paddingHorizontal: 16, alignItems: "center" },
   chip: { flexShrink: 0, height: 36, flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, borderRadius: 999, backgroundColor: c.surfaceTertiary, borderWidth: 1, borderColor: c.surfaceTertiary },
   chipActive: { backgroundColor: c.brandPrimary, borderColor: c.brandPrimary },
-  chipText: { fontSize: 14, fontWeight: "500", color: c.onSurfaceTertiary },
+  chipText: { fontSize: 13, fontWeight: "500", color: c.onSurfaceTertiary },
   chipTextActive: { color: c.onBrandPrimary },
-  list: { padding: 16, gap: 12 },
+  list: { padding: 16, gap: 14 },
+  sectionHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 2 },
+  sectionTitle: { fontSize: 17, fontWeight: "600", color: c.onSurface },
+  resultCount: { fontSize: 12, fontWeight: "500", color: c.muted },
 }));
